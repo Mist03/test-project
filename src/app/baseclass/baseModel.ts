@@ -6,7 +6,7 @@ export abstract class BaseModel<T> {
   protected abstract tableName: string;
 
   async getAll(): Promise<T[]> {
-    const { rows } = await pool.query(`SELECT * FROM ${this.tableName}`);
+    const { rows } = await pool.query(`SELECT *FROM ${this.tableName}`);
     return rows;
   }
 
@@ -19,9 +19,11 @@ export abstract class BaseModel<T> {
   }
 
   async create(data: Omit<T, 'id'>): Promise<T> {
-    const columns = Object.keys(data).join(', ');
+    const columns: string = Object.keys(data).join(', ');
     const values = Object.values(data);
-    const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+    const placeholders: string = values
+      .map((_, i: number) => `$${i + 1}`)
+      .join(', ');
 
     const { rows } = await pool.query(
       `INSERT INTO ${this.tableName} (${columns}) VALUES (${placeholders}) RETURNING *`,
@@ -32,8 +34,8 @@ export abstract class BaseModel<T> {
 
   async update(id: number, data: Partial<T>): Promise<T | null> {
     const entries = Object.entries(data);
-    const setClause = entries
-      .map(([key], i) => `${key} = $${i + 1}`)
+    const setClause: string = entries
+      .map(([key], i: number) => `${key} = $${i + 1}`)
       .join(', ');
     const values = entries.map(([, value]) => value);
 
@@ -50,5 +52,49 @@ export abstract class BaseModel<T> {
       [id],
     );
     return rows[0] || null;
+  }
+
+  async addFavorite(
+    relationTable: string,
+    mainIdField: string,
+    relatedIdField: string,
+    mainId: number,
+    relatedId: number
+  ): Promise<void> {
+    await pool.query(
+      `INSERT INTO ${relationTable} (${mainIdField}, ${relatedIdField})
+       VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [mainId, relatedId],
+    );
+  }
+
+  async removeFavorite(
+    relationTable: string,
+    mainIdField: string,
+    relatedIdField: string,
+    mainId: number,
+    relatedId: number
+  ): Promise<void> {
+    await pool.query(
+      `DELETE FROM ${relationTable}
+       WHERE ${mainIdField} = $1 AND ${relatedIdField} = $2`,
+      [mainId, relatedId],
+    );
+  }
+
+  async getFavorites<R>(
+    relationTable: string,
+    mainIdField: string,
+    relatedIdField: string,
+    relatedTable: string,
+    mainId: number
+  ): Promise<R[]> {
+    const { rows } = await pool.query(
+      `SELECT rt.* FROM ${relatedTable} rt
+                          JOIN ${relationTable} rel ON rt.id = rel.${relatedIdField}
+       WHERE rel.${mainIdField} = $1`,
+      [mainId],
+    );
+    return rows;
   }
 }
