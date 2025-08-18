@@ -27,13 +27,15 @@ export class UserModel extends BaseModel<User> {
       );
 
       if (!rows[0]) {
-        throw new Error('No user data returned from database');
+        throw new Error(
+          'Пользовательские данные не были возвращены из базы данных',
+        );
       }
 
       return rows[0];
     } catch (error) {
-      console.error('User creation failed:', error);
-      throw new Error('Database error during user creation');
+      console.error('Не удалось создать пользователя:', error);
+      throw new Error('Ошибка базы данных при создании пользователя');
     }
   }
   async findByUsername(username: string): Promise<User | null> {

@@ -8,10 +8,16 @@ import {
   Get,
   Request as ReqDecorator,
   InternalServerErrorException,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { User, UserModel } from './userModel';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { AuthGuard } from '../../auth/jwt-auth.guard';
+import { AuthService } from '../../auth/auth.service';
 
 @Controller('users')
 export class UserController {
@@ -27,7 +33,7 @@ export class UserController {
     try {
       const existingUser = await this.userModel.findByUsername(data.username);
       if (existingUser) {
-        throw new UnauthorizedException('Username already exists');
+        throw new UnauthorizedException('Имя пользователя уже существует');
       }
 
       const user = await this.userModel.create({
@@ -36,7 +42,7 @@ export class UserController {
       });
       if (!user.id) {
         throw new InternalServerErrorException(
-          'User created but no ID returned',
+          'Пользователь создан, но идентификатор не возвращен',
         );
       }
 
@@ -46,11 +52,11 @@ export class UserController {
         email: user.email,
       };
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Ошибка регистрации:', error);
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new InternalServerErrorException('Registration failed');
+      throw new InternalServerErrorException('Регистрация провалена');
     }
   }
 
@@ -60,20 +66,24 @@ export class UserController {
   ) {
     const user = await this.userModel.findByUsername(username);
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Неверные учетные данные');
     }
     const payload = { username: user.username, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
     };
   }
+  @UseGuards(AuthGuard)
   @Post('genres/:genreId')
   async addFavoriteGenre(
     @ReqDecorator() req: { user: { id: number } },
     @Param('genreId') genreId: number,
   ) {
+    if (!req?.user) {
+      throw new UnauthorizedException('Пользователь не авторизован');
+    }
     await this.userModel.addFavoriteGenre(req.user.id, genreId);
-    return { message: 'Genre added to favorites' };
+    return { message: 'Жанр добавлен в избранное' };
   }
 
   @Delete('genres/:genreId')
@@ -82,11 +92,14 @@ export class UserController {
     @Param('genreId') genreId: number,
   ) {
     await this.userModel.removeFavoriteGenre(req.user.id, genreId);
-    return { message: 'Genre removed from favorites' };
+    return { message: 'Жанр удален из избранного' };
   }
-
+  @UseGuards(AuthGuard)
   @Get('genres')
   async getFavoriteGenres(@ReqDecorator() req: { user: { id: number } }) {
+    if (!req?.user) {
+      throw new UnauthorizedException('Пользователь не авторизован');
+    }
     return this.userModel.getFavoriteGenres(req.user.id);
   }
 
@@ -96,7 +109,7 @@ export class UserController {
     @Param('authorId') authorId: number,
   ) {
     await this.userModel.addFavoriteAuthor(req.user.id, authorId);
-    return { message: 'Author added to favorites' };
+    return { message: 'Автор добавлен в избранное' };
   }
 
   @Delete('authors/:authorId')
@@ -105,7 +118,7 @@ export class UserController {
     @Param('authorId') authorId: number,
   ) {
     await this.userModel.removeFavoriteAuthor(req.user.id, authorId);
-    return { message: 'Author removed from favorites' };
+    return { message: 'Автор удален из избранного' };
   }
 
   @Get('authors')
