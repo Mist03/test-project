@@ -15,22 +15,19 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
-    console.log(request);
-    console.log(token);
     if (!token) {
-      throw new UnauthorizedException("Нет токена");
+      throw new UnauthorizedException('Нет токена');
     }
     try {
-      console.log(jwtConstants.secret)
       const payload = await this.jwtService.verifyAsync(token, {
         secret: jwtConstants.secret,
       });
       // 💡 We're assigning the payload to the request object here
       // so that we can access it in our route handlers
       request['user'] = payload;
-    } catch {
-      console.log(token)
-      throw new UnauthorizedException("Токен не совпадает");
+    } catch (e) {
+      console.error('JWT Verification Error:', e.message);
+      throw new UnauthorizedException('Неверный токен: ' + e.message);
     }
     return true;
   }

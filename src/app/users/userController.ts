@@ -9,15 +9,12 @@ import {
   Request as ReqDecorator,
   InternalServerErrorException,
   UseGuards,
-  HttpCode,
-  HttpStatus,
-  Request,
 } from '@nestjs/common';
 import { User, UserModel } from './userModel';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '../../auth/jwt-auth.guard';
-import { AuthService } from '../../auth/auth.service';
+import { jwtConstants } from '../../auth/constants';
 
 @Controller('users')
 export class UserController {
@@ -70,59 +67,64 @@ export class UserController {
     }
     const payload = { username: user.username, sub: user.id, role: user.role };
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, {
+        secret: jwtConstants.secret,
+        expiresIn: '1h',
+        algorithm: 'HS256',
+      }),
     };
   }
   @UseGuards(AuthGuard)
   @Post('genres/:genreId')
   async addFavoriteGenre(
-    @ReqDecorator() req: { user: { id: number } },
+    @ReqDecorator() req: { user: { sub: number } },
     @Param('genreId') genreId: number,
   ) {
     if (!req?.user) {
       throw new UnauthorizedException('Пользователь не авторизован');
     }
-    await this.userModel.addFavoriteGenre(req.user.id, genreId);
+    console.log(req.user);
+    await this.userModel.addFavoriteGenre(req.user.sub, genreId);
     return { message: 'Жанр добавлен в избранное' };
   }
 
   @Delete('genres/:genreId')
   async removeFavoriteGenre(
-    @ReqDecorator() req: { user: { id: number } },
+    @ReqDecorator() req: { user: { sub: number } },
     @Param('genreId') genreId: number,
   ) {
-    await this.userModel.removeFavoriteGenre(req.user.id, genreId);
+    await this.userModel.removeFavoriteGenre(req.user.sub, genreId);
     return { message: 'Жанр удален из избранного' };
   }
   @UseGuards(AuthGuard)
   @Get('genres')
-  async getFavoriteGenres(@ReqDecorator() req: { user: { id: number } }) {
+  async getFavoriteGenres(@ReqDecorator() req: { user: { sub: number } }) {
     if (!req?.user) {
       throw new UnauthorizedException('Пользователь не авторизован');
     }
-    return this.userModel.getFavoriteGenres(req.user.id);
+    return this.userModel.getFavoriteGenres(req.user.sub);
   }
 
   @Post('authors/:authorId')
   async addFavoriteAuthor(
-    @ReqDecorator() req: { user: { id: number } },
+    @ReqDecorator() req: { user: { sub: number } },
     @Param('authorId') authorId: number,
   ) {
-    await this.userModel.addFavoriteAuthor(req.user.id, authorId);
+    await this.userModel.addFavoriteAuthor(req.user.sub, authorId);
     return { message: 'Автор добавлен в избранное' };
   }
 
   @Delete('authors/:authorId')
   async removeFavoriteAuthor(
-    @ReqDecorator() req: { user: { id: number } },
+    @ReqDecorator() req: { user: { sub: number } },
     @Param('authorId') authorId: number,
   ) {
-    await this.userModel.removeFavoriteAuthor(req.user.id, authorId);
+    await this.userModel.removeFavoriteAuthor(req.user.sub, authorId);
     return { message: 'Автор удален из избранного' };
   }
 
   @Get('authors')
-  async getFavoriteAuthors(@ReqDecorator() req: { user: { id: number } }) {
-    return this.userModel.getFavoriteAuthors(req.user.id);
+  async getFavoriteAuthors(@ReqDecorator() req: { user: { sub: number } }) {
+    return this.userModel.getFavoriteAuthors(req.user.sub);
   }
 }
