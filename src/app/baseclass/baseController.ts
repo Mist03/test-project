@@ -7,8 +7,11 @@ import {
   Delete,
   Param,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { BaseModel } from './baseModel';
+import { AuthGuard } from '../../auth/jwt-auth.guard';
+import { RolesGuard } from '../../auth/roles.guard';
 
 @Injectable()
 export abstract class BaseController<T> {
@@ -28,11 +31,13 @@ export abstract class BaseController<T> {
     return item;
   }
 
+  @UseGuards(AuthGuard, RolesGuard)
   @Post()
   async create(@Body() data: Omit<T, 'id'>): Promise<T> {
     return this.model.create(data);
   }
 
+  @UseGuards(AuthGuard, RolesGuard)
   @Put(':id')
   async update(@Param('id') id: number, @Body() data: Partial<T>): Promise<T> {
     const item = await this.model.update(id, data);
@@ -42,6 +47,7 @@ export abstract class BaseController<T> {
     return item;
   }
 
+  @UseGuards(AuthGuard, RolesGuard)
   @Delete(':id')
   async delete(@Param('id') id: number): Promise<void> {
     const item = await this.model.delete(id);
