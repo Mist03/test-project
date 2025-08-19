@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { BaseModel } from '../baseclass/baseModel';
 import { Genres } from '../genres/genresModel';
 import { Author } from '../author/authorModel';
+import { Book } from '../book/bookModel';
 
 export interface User {
   id?: number;
@@ -103,6 +104,66 @@ export class UserModel extends BaseModel<User> {
       'user_id',
       'author_id',
       'authors',
+      userId,
+    );
+  }
+  // Методы для работы с книгами
+  async addReadBook(userId: number, bookId: number): Promise<void> {
+    return this.addFavorite(
+      'user_read_books',
+      'user_id',
+      'book_id',
+      userId,
+      bookId,
+    );
+  }
+
+  async removeReadBook(userId: number, bookId: number): Promise<void> {
+    return this.removeFavorite(
+      'user_read_books',
+      'user_id',
+      'book_id',
+      userId,
+      bookId,
+    );
+  }
+
+  async getReadBooks(userId: number): Promise<Book[]> {
+    return this.getFavorites<Book>(
+      'user_read_books',
+      'user_id',
+      'book_id',
+      'books',
+      userId,
+    );
+  }
+
+  async addNowReading(userId: number, bookId: number): Promise<void> {
+    return this.addFavorite(
+      'user_now_reading',
+      'user_id',
+      'book_id',
+      userId,
+      bookId,
+    );
+  }
+
+  async removeNowReading(userId: number, bookId: number): Promise<void> {
+    return this.removeFavorite(
+      'user_now_reading',
+      'user_id',
+      'book_id',
+      userId,
+      bookId,
+    );
+  }
+
+  async getNowReading(userId: number): Promise<Book[]> {
+    return this.getFavorites<Book>(
+      'user_now_reading',
+      'user_id',
+      'book_id',
+      'books',
       userId,
     );
   }

@@ -7,6 +7,7 @@ import { GenresModule } from './genres/genresModule';
 import { BookModule } from './book/bookModule';
 import { UserModule } from './users/users.module';
 import { AuthModule } from '../auth/auth.module';
+import { RecommendationModule } from './recomendations/recommendation.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { AuthModule } from '../auth/auth.module';
     BookModule,
     UserModule,
     AuthModule,
+    RecommendationModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',

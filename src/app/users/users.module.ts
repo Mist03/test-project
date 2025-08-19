@@ -4,6 +4,7 @@ import { UserController } from './userController';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { UsersService } from './users.service';
+import { RecommendationModule } from '../recomendations/recommendation.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { UsersService } from './users.service';
         signOptions: { expiresIn: '60m' },
       }),
     }),
+    RecommendationModule,
   ],
   controllers: [UserController],
   providers: [UserModel, JwtModule, UsersService],

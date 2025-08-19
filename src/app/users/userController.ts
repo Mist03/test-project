@@ -15,12 +15,14 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '../../auth/jwt-auth.guard';
 import { jwtConstants } from '../../auth/constants';
+import { RecommendationService } from '../recomendations/recommendation.service';
 
 @Controller('users')
 export class UserController {
   constructor(
     private readonly userModel: UserModel,
     private readonly jwtService: JwtService,
+    private readonly recommendationService: RecommendationService,
   ) {}
 
   @Post('register')
@@ -126,5 +128,66 @@ export class UserController {
   @Get('authors')
   async getFavoriteAuthors(@ReqDecorator() req: { user: { sub: number } }) {
     return this.userModel.getFavoriteAuthors(req.user.sub);
+  }
+  // Методы для работы с книгами
+  @UseGuards(AuthGuard)
+  @Post('books/read/:bookId')
+  async addReadBook(
+    @ReqDecorator() req: { user: { sub: number } },
+    @Param('bookId') bookId: number,
+  ) {
+    await this.userModel.addReadBook(req.user.sub, bookId);
+    return { message: 'Книга отмечена как прочитанная' };
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('books/read/:bookId')
+  async removeReadBook(
+    @ReqDecorator() req: { user: { sub: number } },
+    @Param('bookId') bookId: number,
+  ) {
+    await this.userModel.removeReadBook(req.user.sub, bookId);
+    return { message: 'Книга удалена из прочитанных' };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('books/read')
+  async getReadBooks(@ReqDecorator() req: { user: { sub: number } }) {
+    return this.userModel.getReadBooks(req.user.sub);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('books/reading/:bookId')
+  async addNowReading(
+    @ReqDecorator() req: { user: { sub: number } },
+    @Param('bookId') bookId: number,
+  ) {
+    await this.userModel.addNowReading(req.user.sub, bookId);
+    return { message: 'Книга добавлена в "Читаю сейчас"' };
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('books/reading/:bookId')
+  async removeNowReading(
+    @ReqDecorator() req: { user: { sub: number } },
+    @Param('bookId') bookId: number,
+  ) {
+    await this.userModel.removeNowReading(req.user.sub, bookId);
+    return { message: 'Книга удалена из "Читаю сейчас"' };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('books/reading')
+  async getNowReading(@ReqDecorator() req: { user: { sub: number } }) {
+    return this.userModel.getNowReading(req.user.sub);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('recommendations')
+  async getRecommendations(@ReqDecorator() req: { user: { sub: number } }) {
+    const recommendations = await this.recommendationService.getRecommendations(
+      req.user.sub,
+    );
+    return { recommendations };
   }
 }
